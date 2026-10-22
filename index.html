@@ -202,6 +202,11 @@ button.chip { font-family: inherit; cursor: pointer; }
 .typing span:nth-child(3) { animation-delay: 0.3s; }
 @keyframes dot { 0%, 60%, 100% { opacity: 0.3; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-4px); } }
 .burbuja[hidden] { display: none; }
+.btn-wa[hidden] { display: none; }
+.btn-wa { margin-top: 6px; animation: pop 0.35s ease-out both, pulso 1.6s ease-in-out 0.4s 3; }
+.btn-wa.hecho { animation: none; background: transparent; color: var(--yellow); border: 2px solid var(--yellow); min-height: 50px; font-size: 16px; }
+.btn-wa.hecho svg path:first-child { fill: var(--yellow); }
+@keyframes pulso { 0%, 100% { box-shadow: 0 0 0 0 rgba(255, 210, 63, 0.55); } 50% { box-shadow: 0 0 0 10px rgba(255, 210, 63, 0); } }
 .burbuja { align-self: flex-start; animation: pop 0.35s ease-out both; }
 .burbuja {
   max-width: 92%;
@@ -243,15 +248,15 @@ button.chip { font-family: inherit; cursor: pointer; }
       ¡Mandale un mensaje a Gonza!
     </button>
     <div class="opciones" id="opciones" hidden>
-      <a class="chip" href="https://wa.me/59893508053?text=%2AEstoy%20para%20el%20cumple%20de%20Gonza%20%21%21%21%2A" target="_blank" rel="noopener">¡Estoy!</a>
-      <a class="chip" href="https://wa.me/59893508053?text=%2AVoy%20al%20cumple%20de%20Gonza%20%21%21%21%2A" target="_blank" rel="noopener">¡Voy!</a>
-      <a class="chip" href="https://wa.me/59893508053?text=%2AMe%20prendo%20al%20cumple%20de%20Gonza%20%21%21%21%2A" target="_blank" rel="noopener">Me prendo</a>
-      <a class="chip" href="https://wa.me/59893508053?text=%2ACont%C3%A1%20conmigo%20para%20el%20cumple%20de%20Gonza%20%21%21%21%2A" target="_blank" rel="noopener">Contá conmigo</a>
+      <button class="chip" type="button" data-msg="Estoy para el cumple de Gonza !!!">¡Estoy!</button>
+      <button class="chip" type="button" data-msg="Voy al cumple de Gonza !!!">¡Voy!</button>
+      <button class="chip" type="button" data-msg="Me prendo al cumple de Gonza !!!">Me prendo</button>
+      <button class="chip" type="button" data-msg="Contá conmigo para el cumple de Gonza !!!">Contá conmigo</button>
       <button class="chip chip-full" id="miBtn" type="button" aria-expanded="false" aria-controls="miPanel">Mi mensaje</button>
     </div>
     <div class="mi-panel" id="miPanel" hidden>
       <textarea id="miTexto" maxlength="500" placeholder="Escribile algo a Gonza…" aria-label="Tu mensaje para Gonza"></textarea>
-      <a class="btn btn-ok" id="miEnviar" href="https://wa.me/59893508053" target="_blank" rel="noopener">Enviar a Gonza</a>
+      <button class="btn btn-ok" id="miListo" type="button">Listo</button>
     </div>
     <div class="respuesta" id="respuesta" role="status" hidden>
       <div class="env">
@@ -264,6 +269,10 @@ button.chip { font-family: inherit; cursor: pointer; }
         <div class="r2">Los 21 de Gonza</div>
         <div class="r3">¡Show en vivo!</div>
       </div>
+      <a class="btn btn-ok btn-wa" id="enviarWA" href="https://wa.me/59893508053" rel="noopener" hidden>
+        <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M11 2C5.75 2 1.6 5.7 1.6 10.3c0 2.5 1.25 4.75 3.25 6.25L4 20.2l4.15-2.05c.9.22 1.85.35 2.85.35 5.25 0 9.4-3.7 9.4-8.2S16.25 2 11 2Z" fill="#0A1E4A"/><path d="M7 10.6l2.6 2.5L15 7.8" fill="none" stroke="#FFD23F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span id="enviarTxt">Enviar a Gonza por WhatsApp</span>
+      </a>
     </div>
   </nav>
 </main>
@@ -294,7 +303,7 @@ button.chip { font-family: inherit; cursor: pointer; }
   var miBtn = document.getElementById('miBtn');
   var miPanel = document.getElementById('miPanel');
   var miTexto = document.getElementById('miTexto');
-  var miEnviar = document.getElementById('miEnviar');
+  var miListo = document.getElementById('miListo');
   var resp = document.getElementById('respuesta');
   var envTexto = document.getElementById('envTexto');
   var envHora = document.getElementById('envHora');
@@ -302,57 +311,52 @@ button.chip { font-family: inherit; cursor: pointer; }
   var envLabel = document.getElementById('envLabel');
   var typing = document.getElementById('typing');
   var reply = document.getElementById('reply');
-  var pendiente = null;
+  var wa = document.getElementById('enviarWA');
+  var waTxt = document.getElementById('enviarTxt');
   var timers = [];
+  var arriba = (function () { try { return window.top === window.self; } catch (e) { return false; } })();
+  wa.target = arriba ? '_self' : '_blank';
   function hora() { var d = new Date(); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
-  function guardar(t, h) { try { localStorage.setItem('gonza21-enviado', '1'); localStorage.setItem('gonza21-msg', t); localStorage.setItem('gonza21-hora', h); } catch (e) {} }
-  function estadoFinal(t, h) {
-    envTexto.textContent = t; envHora.textContent = h;
+  function linkWA(t, negrita) { return 'https://wa.me/' + NUM + (t ? '?text=' + encodeURIComponent(negrita ? '*' + t + '*' : t) : ''); }
+  function marcarEnviado() {
     ticks.classList.add('doble', 'leido'); envLabel.classList.add('on');
-    typing.hidden = true; reply.hidden = false; resp.hidden = false;
+    wa.classList.add('hecho'); waTxt.textContent = 'Abrir WhatsApp otra vez';
   }
-  function secuencia(t, h) {
+  function preparar(t, negrita) {
+    t = (t || '').trim() || 'Hola Gonza!';
     timers.forEach(clearTimeout); timers = [];
-    envTexto.textContent = t; envHora.textContent = h;
+    envTexto.textContent = t; envHora.textContent = hora();
     ticks.classList.remove('doble', 'leido'); envLabel.classList.remove('on');
-    typing.hidden = true; reply.hidden = true; resp.hidden = false;
-    try { resp.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
-    timers.push(setTimeout(function () { ticks.classList.add('doble'); }, 450));
-    timers.push(setTimeout(function () { ticks.classList.add('leido'); envLabel.classList.add('on'); }, 950));
-    timers.push(setTimeout(function () { typing.hidden = false; }, 1400));
-    timers.push(setTimeout(function () { typing.hidden = true; reply.hidden = false; }, 2700));
+    typing.hidden = true; reply.hidden = true; wa.hidden = true;
+    wa.classList.remove('hecho'); waTxt.textContent = 'Enviar a Gonza por WhatsApp';
+    wa.href = linkWA(t, negrita);
+    resp.hidden = false;
+    try { localStorage.setItem('gonza21-msg', t); localStorage.setItem('gonza21-negrita', negrita ? '1' : '0'); localStorage.removeItem('gonza21-enviado'); } catch (e) {}
+    try { resp.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {}
+    timers.push(setTimeout(function () { typing.hidden = false; }, 700));
+    timers.push(setTimeout(function () { typing.hidden = true; reply.hidden = false; }, 2000));
+    timers.push(setTimeout(function () { wa.hidden = false; try { wa.scrollIntoView({ behavior: 'smooth', block: 'end' }); } catch (e) {} }, 2600));
   }
-  function enviado(texto) {
-    var t = (texto || '').replace(/\*/g, '').trim() || 'Mensaje para Gonza';
-    var h = hora();
-    guardar(t, h);
-    setTimeout(function () {
-      if (document.hidden) { pendiente = [t, h]; } else { secuencia(t, h); }
-    }, 350);
-  }
-  document.addEventListener('visibilitychange', function () {
-    if (!document.hidden && pendiente) { var p = pendiente; pendiente = null; setTimeout(function () { secuencia(p[0], p[1]); }, 300); }
+  wa.addEventListener('click', function () {
+    marcarEnviado();
+    try { localStorage.setItem('gonza21-enviado', '1'); localStorage.setItem('gonza21-hora', envHora.textContent); } catch (e) {}
   });
-  function textoDe(a) {
-    try { return decodeURIComponent((a.getAttribute('href').split('text=')[1] || '')); } catch (e) { return ''; }
-  }
+  Array.prototype.forEach.call(document.querySelectorAll('.opciones button.chip[data-msg]'), function (c) {
+    c.addEventListener('click', function () { miPanel.hidden = true; miBtn.setAttribute('aria-expanded', 'false'); preparar(c.getAttribute('data-msg'), true); });
+  });
   miBtn.addEventListener('click', function () {
     var abrir = miPanel.hidden;
     miPanel.hidden = !abrir;
     miBtn.setAttribute('aria-expanded', abrir ? 'true' : 'false');
     if (abrir) { try { miTexto.focus(); } catch (e) {} }
   });
-  miTexto.addEventListener('input', function () {
-    var t = miTexto.value.trim();
-    miEnviar.href = 'https://wa.me/' + NUM + (t ? '?text=' + encodeURIComponent(t) : '');
-  });
-  miEnviar.addEventListener('click', function () { enviado(miTexto.value); });
-  Array.prototype.forEach.call(document.querySelectorAll('.opciones a.chip'), function (a) {
-    a.addEventListener('click', function () { enviado(textoDe(a)); });
-  });
+  miListo.addEventListener('click', function () { preparar(miTexto.value, false); });
   try {
     if (localStorage.getItem('gonza21-enviado') === '1') {
-      estadoFinal(localStorage.getItem('gonza21-msg') || 'Mensaje para Gonza', localStorage.getItem('gonza21-hora') || '');
+      var t0 = localStorage.getItem('gonza21-msg') || 'Hola Gonza!';
+      envTexto.textContent = t0; envHora.textContent = localStorage.getItem('gonza21-hora') || '';
+      wa.href = linkWA(t0, localStorage.getItem('gonza21-negrita') === '1');
+      reply.hidden = false; wa.hidden = false; resp.hidden = false; marcarEnviado();
     }
   } catch (e) {}
 })();
