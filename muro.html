@@ -37,7 +37,7 @@ html { background: var(--bg); scroll-padding-top: env(safe-area-inset-top, 0px);
 body { margin: 0; min-height: 100%; color: var(--ink); font-family: 'Inter Tight', 'Helvetica Neue', Arial, sans-serif; }
 .fondo { position: fixed; inset: 0; z-index: 0; background: var(--bg) url('fondo-agua.jpg') center / cover no-repeat; }
 .fondo::after { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse 85% 60% at 50% 30%, rgba(4, 18, 48, 0.2) 0%, rgba(4, 18, 48, 0.55) 60%, rgba(4, 18, 48, 0.85) 100%); }
-main { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 28px 18px 48px; }
+main { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 48px 18px 48px; }
 header { text-align: center; }
 .los { font-weight: 800; font-size: 15px; letter-spacing: 10px; padding-left: 10px; }
 .veintiuno {
@@ -52,9 +52,9 @@ header { text-align: center; }
 .cuenta span { font-size: 15px; font-weight: 800; letter-spacing: 2px; color: var(--muted); }
 .cuenta.si { background: var(--yellow); border-color: var(--yellow); color: var(--navy); }
 .cuenta.si span { color: rgba(10, 30, 74, 0.75); }
-.muro { columns: 300px; column-gap: 16px; }
+.muro { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 340px)); justify-content: center; align-items: start; gap: 16px; }
 .msj {
-  break-inside: avoid; display: inline-block; width: 100%; margin: 0 0 16px;
+  margin: 0;
   padding: 16px 18px 18px; border-radius: 20px 20px 20px 6px;
   background: var(--card); border: 2px solid rgba(92, 242, 230, 0.4);
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.25);
@@ -86,12 +86,11 @@ header { text-align: center; }
     <h1 class="gonza" style="margin:0">GONZA</h1>
   </header>
   <div class="cuentas" aria-live="polite">
-    <div class="cuenta si"><b id="nConf">0</b><span id="lConf">CONFIRMADOS</span></div>
-    <div class="cuenta"><b id="nMsj">0</b><span id="lMsj">MENSAJES</span></div>
+        <div class="cuenta"><b id="nMsj">0</b><span id="lMsj">MENSAJES</span></div>
   </div>
   <section class="muro" id="muro" aria-label="Mensajes para Gonza"></section>
-  <div class="vacio" id="vacio" hidden>Todavía no hay mensajes. ¡Mandale el primero!</div>
-  <div class="pie"><a class="btn" href="./">Mandale un mensaje a Gonza</a></div>
+  <div class="vacio" id="vacio" hidden>Todavía no hay mensajes. ¡Dejale el primero!</div>
+  <div class="pie"><a class="btn" href="./">Dejale un mensaje en el muro</a></div>
   <div class="estado" id="estado" role="status"></div>
 </main>
 <script>
@@ -105,11 +104,6 @@ header { text-align: center; }
   function hhmm(iso) { try { var d = new Date(iso); if (isNaN(d)) return ''; return d.toLocaleDateString('es-UY', { day: 'numeric', month: 'short' }) + ' · ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); } catch (e) { return ''; } }
   function pintar(lista) {
     lista = (lista || []).slice().sort(function (a, b) { return String(b.fecha).localeCompare(String(a.fecha)); });
-    var conf = {};
-    lista.forEach(function (m) { if (m.opcion && m.opcion !== 'Mi mensaje') conf[norm(m.nombre)] = 1; });
-    var nc = Object.keys(conf).length;
-    document.getElementById('nConf').textContent = nc;
-    document.getElementById('lConf').textContent = nc === 1 ? 'CONFIRMADO' : 'CONFIRMADOS';
     document.getElementById('nMsj').textContent = lista.length;
     document.getElementById('lMsj').textContent = lista.length === 1 ? 'MENSAJE' : 'MENSAJES';
     vacio.hidden = lista.length > 0;
